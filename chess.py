@@ -23,7 +23,6 @@ window.register_shape("./pieces/king-b.gif")
 window.register_shape("./pieces/king-w.gif")
 
 
-color = "white"
 for boxes in range(8):
     for box in range(8):
         if (boxes + box) % 2 == 0:
