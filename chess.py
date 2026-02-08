@@ -1,5 +1,4 @@
 import turtle as t
-import math
 
 window = t.Screen()
 window.setup(800, 800)
@@ -32,10 +31,10 @@ RANKS = "12345678"
 
 class Piece:
     def __init__(self, kind, color, position, turtle):
-        self.kind = (kind,)
-        self.color = (color,)
-        self.position = (position,)
-        self.turtle = (turtle,)
+        self.kind = kind
+        self.color = color
+        self.position = position
+        self.turtle = turtle
 
 
 for boxes in range(8):
@@ -73,13 +72,13 @@ def square_to_xy(file, rank):
 
 def create_pawns(color, rank, image):
     pawns = []
-    for x in FILES:
+    for file in FILES:
         turt = t.Turtle()
         turt.shape(image)
         turt.penup()
-        square = f"{x}{rank}"
+        square = f"{file}{rank}"
         print(square)
-        x, y = square_to_xy(x, rank)
+        x, y = square_to_xy(file, rank)
         turt.goto(x, y)
         pawn = Piece("pawn", color, square, turt)
         pawns.append(pawn)
@@ -95,12 +94,12 @@ pieces.extend(black_pawns)
 
 def create_rooks(color, rank, image):
     rooks = []
-    for x in ["a", "h"]:
+    for file in ["a", "h"]:
         turt = t.Turtle()
         turt.shape(image)
         turt.penup()
-        square = f"{x}{rank}"
-        x, y = square_to_xy(x, rank)
+        square = f"{file}{rank}"
+        x, y = square_to_xy(file, rank)
         turt.goto(x, y)
         rook = Piece("rook", color, square, turt)
         rooks.append(rook)
@@ -116,12 +115,12 @@ pieces.extend(black_rooks)
 
 def create_knight(color, rank, image):
     knights = []
-    for x in ["b", "g"]:
+    for file in ["b", "g"]:
         turt = t.Turtle()
         turt.shape(image)
         turt.penup()
-        square = f"{x}{rank}"
-        x, y = square_to_xy(x, rank)
+        square = f"{file}{rank}"
+        x, y = square_to_xy(file, rank)
         turt.goto(x, y)
         knight = Piece("knight", color, square, turt)
         knights.append(knight)
@@ -137,12 +136,12 @@ pieces.extend(black_knights)
 
 def create_bishop(color, rank, image):
     bishops = []
-    for x in ["c", "f"]:
+    for file in ["c", "f"]:
         turt = t.Turtle()
         turt.shape(image)
         turt.penup()
-        square = f"{x}{rank}"
-        x, y = square_to_xy(x, rank)
+        square = f"{file}{rank}"
+        x, y = square_to_xy(file, rank)
         turt.goto(x, y)
         bishop = Piece("bishop", color, square, turt)
         bishops.append(bishop)
@@ -190,9 +189,65 @@ black_queen = create_queen("black", 1, "./pieces/queen-b.gif")
 
 pieces.append(white_queen)
 pieces.append(black_queen)
-print(pieces)
-boards = []
+print("pieces", pieces)
+boards = {}
 
+
+for file in FILES:
+    for rank in RANKS:
+        boards[f"{file}{rank}"] = None
+
+for piece in pieces:
+    boards[piece.position] = piece
+
+print("board", boards)
+
+
+def xy_to_board(x, y):
+    print(round(x + 350) / 100)
+    file = FILES[round((x + 350) / 100)]
+    rank = str(round((y + 350) / 100) + 1)
+    return file + rank
+
+
+selected_piece = None
+
+
+def fxn(x, y):
+    global selected_piece
+    if selected_piece is None:
+        t.goto(x, y)
+        box = xy_to_board(x, y)
+        if boards[box] is None:
+            print("no piece selected")
+        else:
+            selected_piece = boards[box]
+            print(box, selected_piece.kind, selected_piece.color)
+        print(selected_piece)
+    else:
+        box = xy_to_board(x, y)
+        # if is_legal_move(selected_piece, square):
+        #     move_piece(selected_piece, square)
+        if boards[box] is not None:
+            return print("illegal move")
+        move_piece(selected_piece, box)
+        selected_piece = None
+
+
+def move_piece(piece, box):
+    piece.turtle.penup()
+    boards[piece.position] = None
+    piece.position = box
+    x, y = square_to_xy(box[0], box[1])
+    piece.turtle.goto(x, y)
+    boards[box] = piece
+    print("moving")
+    t.update()
+
+
+t.penup()
+t.hideturtle()
+window.onclick(fxn)
 t.update()
 t.done()
 # boardbox = {
