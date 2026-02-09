@@ -86,8 +86,8 @@ def create_pawns(color, rank, image):
     return pawns
 
 
-white_pawns = create_pawns("white", 7, "./pieces/pawn-w.gif")
-black_pawns = create_pawns("black", 2, "./pieces/pawn-b.gif")
+white_pawns = create_pawns("white", 2, "./pieces/pawn-w.gif")
+black_pawns = create_pawns("black", 7, "./pieces/pawn-b.gif")
 
 pieces.extend(white_pawns)
 pieces.extend(black_pawns)
@@ -107,8 +107,8 @@ def create_rooks(color, rank, image):
     return rooks
 
 
-white_rooks = create_rooks("white", 8, "./pieces/rook-w.gif")
-black_rooks = create_rooks("black", 1, "./pieces/rook-b.gif")
+white_rooks = create_rooks("white", 1, "./pieces/rook-w.gif")
+black_rooks = create_rooks("black", 8, "./pieces/rook-b.gif")
 
 pieces.extend(white_rooks)
 pieces.extend(black_rooks)
@@ -128,8 +128,8 @@ def create_knight(color, rank, image):
     return knights
 
 
-white_knights = create_knight("white", 8, "./pieces/knight-w.gif")
-black_knights = create_knight("black", 1, "./pieces/knight-b.gif")
+white_knights = create_knight("white", 1, "./pieces/knight-w.gif")
+black_knights = create_knight("black", 8, "./pieces/knight-b.gif")
 
 pieces.extend(white_knights)
 pieces.extend(black_knights)
@@ -149,8 +149,8 @@ def create_bishop(color, rank, image):
     return bishops
 
 
-white_bishop = create_bishop("white", 8, "./pieces/bishop-w.gif")
-black_bishop = create_bishop("black", 1, "./pieces/bishop-b.gif")
+white_bishop = create_bishop("white", 1, "./pieces/bishop-w.gif")
+black_bishop = create_bishop("black", 8, "./pieces/bishop-b.gif")
 
 pieces.extend(white_bishop)
 pieces.extend(black_bishop)
@@ -167,8 +167,8 @@ def create_king(color, rank, image):
     return king
 
 
-white_king = create_king("white", 8, "./pieces/king-w.gif")
-black_king = create_king("black", 1, "./pieces/king-b.gif")
+white_king = create_king("white", 1, "./pieces/king-w.gif")
+black_king = create_king("black", 8, "./pieces/king-b.gif")
 
 pieces.append(white_king)
 pieces.append(black_king)
@@ -185,8 +185,8 @@ def create_queen(color, rank, image):
     return queen
 
 
-white_queen = create_queen("white", 8, "./pieces/queen-w.gif")
-black_queen = create_queen("black", 1, "./pieces/queen-b.gif")
+white_queen = create_queen("white", 1, "./pieces/queen-w.gif")
+black_queen = create_queen("black", 8, "./pieces/queen-b.gif")
 
 pieces.append(white_queen)
 pieces.append(black_queen)
@@ -254,13 +254,56 @@ def fxn(x, y):
         print("switched selection to:", box)
         return
 
-    if clicked_piece is None:
+    if clicked_piece is None or boards[box].color != selected_piece.color:
 
         print("selected_piece")
-        move_piece(selected_piece, box)
-        selected_piece = None
-        ind = 1 - ind
+
+        if is_legal_move(selected_piece, box):
+            move_piece(selected_piece, box)
+            selected_piece.move_count += 1
+            selected_piece = None
+            ind = 1 - ind
         return
+
+
+# if same file:
+#     if one step forward and empty:
+#         valid
+#     if two steps forward and first move and path empty:
+#         valid
+#
+# if diagonal by 1 file:
+#     if one step forward and enemy piece:
+#         valid
+#
+# otherwise:
+#     invalid
+def is_legal_move(piece, box):
+    file_from = FILES.index(piece.position[0])
+    rank_from = int(piece.position[1])
+
+    file_to = FILES.index(box[0])
+    rank_to = int(box[1])
+    direction = 1 if piece.color == "white" else -1
+    if piece.kind == "pawn":
+        # same lane
+        if file_from == file_to:
+            if rank_from + direction == rank_to and boards[box] is None:
+                return True
+
+            if piece.move_count == 0 and rank_from + 2 * direction == rank_to:
+                intermediate_box = piece.position[0] + str(rank_from + direction)
+                if boards[intermediate_box] is None and boards[box] is None:
+                    return True
+        # capture
+        if abs(file_from - file_to) == 1 and rank_from + direction == rank_to:
+            if boards[box] and boards[box].color != piece.color:
+                pie = boards[box]
+                pie.turtle.shape("blank")
+
+                return True
+
+        return False
 
 
 # def pawn_move(piece):
