@@ -266,18 +266,6 @@ def fxn(x, y):
         return
 
 
-# if same file:
-#     if one step forward and empty:
-#         valid
-#     if two steps forward and first move and path empty:
-#         valid
-#
-# if diagonal by 1 file:
-#     if one step forward and enemy piece:
-#         valid
-#
-# otherwise:
-#     invalid
 def is_legal_move(piece, box):
     file_from = FILES.index(piece.position[0])
     rank_from = int(piece.position[1])
@@ -304,18 +292,32 @@ def is_legal_move(piece, box):
                 return True
 
         return False
+    if piece.kind == "rook":
+        # vertical movement
+        if file_from == file_to:
+            step = 1 if rank_to > rank_from else -1
+            for r in range(rank_from + step, rank_to, step):
+                square = piece.position[0] + str(r)
+                if boards[square] is not None:
+                    return False
+        # horizontal movement
+        elif rank_from == rank_to:
+            step = 1 if file_to > file_from else -1
+            for f in range(file_from + step, file_to, step):
+                square = FILES[f] + piece.position[1]
+                if boards[square] is not None:
+                    return False
+        else:
+            return False
 
+        if boards[box] is None:
+            return True
 
-# def pawn_move(piece):
-#     file, rank = piece.position
-#     direction = 1 if piece.color == "white" else -1
-#     forward = f"{file}{int(rank)+direction}"
-#
-#     if forward not in boards:
-#         return []
-#     if boards[forward] is None:
-#         return [forward]
-#     return []
+        if boards[box].color != piece.color:
+            boards[box].turtle.shape("blank")
+            return True
+
+        return False
 
 
 def move_piece(piece, box):
