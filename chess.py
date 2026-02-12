@@ -370,6 +370,16 @@ def is_legal_move(piece, box):
                 boards[box].turtle.shape("blank")
                 return True
         return False
+    if piece.kind == "king":
+        df = abs(file_from - file_to)
+        dr = abs(rank_from - rank_to)
+        if (df == dr == 1) or (dr == 1 and df == 0) or (dr == 0 and df == 1):
+            if boards[box] is None:
+                return True
+            if boards[box].color != piece.color:
+                boards[box].turtle.shape("blank")
+                return True
+        return False
 
 
 def move_piece(piece, box):
