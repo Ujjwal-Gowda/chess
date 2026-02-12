@@ -319,6 +319,47 @@ def is_legal_move(piece, box):
 
         return False
 
+    if piece.kind == "bishop":
+        df = file_to - file_from
+        dr = rank_to - rank_from
+
+        if abs(df) != abs(dr):
+            return False
+
+        step_file = 1 if df > 0 else -1
+        step_rank = 1 if dr > 0 else -1
+        f = file_from + step_file
+        r = rank_from + step_rank
+
+        while f != file_to and r != rank_to:
+            square = FILES[f] + str(r)
+            if boards[square] is not None:
+                return False
+            f += step_file
+            r += step_rank
+        if boards[box] is None:
+            return True
+
+        if boards[box].color != piece.color:
+            boards[box].turtle.shape("blank")
+            return True
+
+        return False
+    if piece.kind == "queen":
+
+        piece.kind = "rook"
+        if is_legal_move(piece, box):
+            piece.kind = "queen"
+            return True
+
+        piece.kind = "bishop"
+        if is_legal_move(piece, box):
+            piece.kind = "queen"
+            return True
+
+        piece.kind = "queen"
+        return False
+
 
 def move_piece(piece, box):
     piece.turtle.penup()
