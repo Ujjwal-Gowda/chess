@@ -27,6 +27,8 @@ pieces = []
 current_turn = ["white", "black"]
 FILES = "abcdefgh"
 RANKS = "12345678"
+black_rm = []
+white_rm = []
 
 
 class Piece:
@@ -224,13 +226,18 @@ ind = 0
 
 def fxn(x, y):
     global selected_piece, ind
-
     if not (-400 < x < 400 and -400 < y < 400):
         return
 
     box = xy_to_board(x, y)
     if box is None:
         return
+
+    if in_check("black"):
+        print("balck in check")
+
+    if in_check("white"):
+        print("white in check")
 
     clicked_piece = boards[box]
     if selected_piece is None:
@@ -288,7 +295,12 @@ def is_legal_move(piece, box):
             if boards[box] and boards[box].color != piece.color:
                 pie = boards[box]
                 pie.turtle.shape("blank")
-
+                (
+                    black_rm.append(pie)
+                    if piece.color == "white"
+                    else white_rm.append(pie)
+                )
+                print(white_rm, black_rm)
                 return True
 
         return False
@@ -373,12 +385,17 @@ def is_legal_move(piece, box):
     if piece.kind == "king":
         df = abs(file_from - file_to)
         dr = abs(rank_from - rank_to)
+        op_color = "white" if piece.color == "black" else "black"
         if (df == dr == 1) or (dr == 1 and df == 0) or (dr == 0 and df == 1):
-            if boards[box] is None:
+            if not is_square_attacked(box, op_color):
+                if boards[box] is None:
+                    return True
+                if boards[box].color != piece.color:
+                    boards[box].turtle.shape("blank")
                 return True
-            if boards[box].color != piece.color:
-                boards[box].turtle.shape("blank")
-                return True
+            else:
+                print("ememy attack range")
+
         return False
 
 
@@ -391,6 +408,89 @@ def move_piece(piece, box):
     boards[box] = piece
     print("moving")
     t.update()
+
+
+def is_square_attacked(square, by_color):
+    file = FILES.index(square[0])
+    rank = int(square[1])
+
+    pawn_dir = 1 if by_color == "white" else -1
+    for df in (-1, 1):
+        f = file + df
+        r = rank - pawn_dir
+        if 0 <= f < 8 and 1 <= r <= 8:
+            p = boards[FILES[f] + str(r)]
+            if p and p.color == by_color and p.kind == "pawn":
+                return True
+
+    knight_moves = [
+        (2, 1),
+        (2, -1),
+        (-2, 1),
+        (-2, -1),
+        (1, 2),
+        (1, -2),
+        (-1, 2),
+        (-1, -2),
+    ]
+    for df, dr in knight_moves:
+        f = file + df
+        r = rank + dr
+        if 0 <= f < 8 and 1 <= r <= 8:
+            p = boards[FILES[f] + str(r)]
+            if p and p.color == by_color and p.kind == "knight":
+                return True
+
+    for df, dr in [(1, 1), (1, -1), (-1, 1), (-1, -1)]:
+        f = file + df
+        r = rank + dr
+        while 0 <= f < 8 and 1 <= r <= 8:
+            p = boards[FILES[f] + str(r)]
+            if p:
+                if p.color == by_color and p.kind in ("bishop", "queen"):
+                    return True
+                break
+            f += df
+            r += dr
+
+    for df, dr in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+        f = file + df
+        r = rank + dr
+        while 0 <= f < 8 and 1 <= r <= 8:
+            p = boards[FILES[f] + str(r)]
+            if p:
+                if p.color == by_color and p.kind in ("rook", "queen"):
+                    return True
+                break
+            f += df
+            r += dr
+
+    for df in (-1, 0, 1):
+        for dr in (-1, 0, 1):
+            if df == 0 and dr == 0:
+                continue
+            f = file + df
+            r = rank + dr
+            if 0 <= f < 8 and 1 <= r <= 8:
+                p = boards[FILES[f] + str(r)]
+                if p and p.color == by_color and p.kind == "king":
+                    return True
+
+    return False
+
+
+def find_king(color):
+    for box in boards:
+        obj = boards[box]
+        if obj is not None and obj.kind == "king" and obj.color == color:
+            return box
+    pass
+
+
+def in_check(color):
+    king_square = find_king(color)
+    enemy = "white" if color == "black" else "black"
+    return is_square_attacked(king_square, enemy)
 
 
 t.penup()
