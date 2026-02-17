@@ -40,10 +40,19 @@ class Piece:
         self.move_count = move_count
 
 
+class Move:
+    def __init__(self, piece, from_sq, to_sq, captured, prev_move_count):
+        self.piece = piece
+        self.from_sq = from_sq
+        self.to_sq = to_sq
+        self.captured = captured
+        self.prev_move_count = prev_move_count
+
+
 for boxes in range(8):
     for box in range(8):
         if (boxes + box) % 2 == 0:
-            board.fillcolor("lightgreen")
+            board.fillcolor("lightblue")
         else:
             board.fillcolor("white")
         board.begin_fill()
@@ -455,6 +464,9 @@ def move_piece(piece, box):
     piece.turtle.goto(x, y)
     boards[box] = piece
     piece.move_count += 1
+    pawn_promotion()
+    generate_moves("black")
+
     print("moving")
     if in_check("black"):
         print("black in check")
@@ -601,6 +613,61 @@ def is_stalemate(color):
                     if is_legal_move(piece, target) and move_is_safe(piece, target):
                         return False
     return True
+
+
+def pawn_promotion():
+    for color in ["white", "black"]:
+        rank = "8" if color == "white" else "1"
+        for box in boards:
+            piece = boards[box]
+            if piece and piece.kind == "pawn" and piece.color == color:
+                if box[1] == rank:
+                    piece.kind = "queen"
+                    piece.turtle.shape(
+                        "./pieces/queen-w.gif"
+                        if piece.color == "white"
+                        else "./pieces/queen-b.gif"
+                    )
+    return
+
+
+def generate_moves(color):
+    moves = []
+    for box in boards:
+        piece = boards[box]
+        if piece and piece.color == color:
+            for f in FILES:
+                for r in "12345678":
+                    target = f + r
+                    if is_legal_move(piece, target) and move_is_safe(piece, target):
+                        moves.append((piece, target))
+    print(moves[0], moves[1])
+    return moves
+
+
+def make_move(piece, to_sq):
+    from_sq = piece.position
+    captured = boards[to_sq]
+    prev_move_count = piece.move_count
+
+    move = Move(piece, from_sq, to_sq, captured, prev_move_count)
+
+    boards[from_sq] = None
+    piece.position = to_sq
+    boards[to_sq] = piece
+    piece.move_count += 1
+
+    return move
+
+
+def undo_move(move):
+    piece = move.piece
+    boards[move.to_sq] = move.captured
+    if move.captured:
+        move.captured.position = move.to_sq
+    boards[move.from_sq] = piece
+    piece.position = move.from_sq
+    piece.move_count = move.prev_move_count
 
 
 t.penup()
