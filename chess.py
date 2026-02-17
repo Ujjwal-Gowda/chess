@@ -273,7 +273,6 @@ def fxn(x, y):
         if is_legal_move(selected_piece, box):
             move_piece(selected_piece, box)
             selected_piece = None
-            ind = 1 - ind
         return
 
 
@@ -353,11 +352,6 @@ def is_legal_move(piece, box):
         while 0 <= f < 8 and 1 <= r <= 8:
             if f == file_to and r == rank_to:
                 break
-            square = FILES[f] + str(r)
-            if boards[square] is not None:
-                return False
-            f += step_file
-            r += step_rank
             square = FILES[f] + str(r)
             if boards[square] is not None:
                 return False
@@ -480,10 +474,6 @@ def move_piece(piece, box):
     pawn_promotion()
 
     ind = 1 - ind
-
-    if current_turn[ind] == AI_COLOR:
-        window.ontimer(ai_move, 300)
-
     print("moving")
     if in_check("black"):
         print("black in check")
@@ -500,6 +490,9 @@ def move_piece(piece, box):
     if is_stalemate("white"):
         print("stalemate")
     t.update()
+
+    if current_turn[ind] == AI_COLOR:
+        window.ontimer(ai_move, 300)
 
 
 def is_square_attacked(square, by_color):
@@ -765,8 +758,6 @@ def ai_move():
 
     piece, target = result
     move_piece(piece, target)
-
-    ind = 1 - ind
 
 
 t.penup()
