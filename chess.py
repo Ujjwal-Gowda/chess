@@ -262,7 +262,6 @@ def fxn(x, y):
 
         if is_legal_move(selected_piece, box):
             move_piece(selected_piece, box)
-            selected_piece.move_count += 1
             selected_piece = None
             ind = 1 - ind
         return
@@ -290,7 +289,6 @@ def is_legal_move(piece, box):
         if abs(file_from - file_to) == 1 and rank_from + direction == rank_to:
             if boards[box] and boards[box].color != piece.color:
                 pie = boards[box]
-                pie.turtle.shape("blank")
                 (
                     black_rm.append(pie)
                     if piece.color == "white"
@@ -322,7 +320,6 @@ def is_legal_move(piece, box):
             return move_is_safe(piece, box)
 
         if boards[box].color != piece.color:
-            boards[box].turtle.shape("blank")
             return move_is_safe(piece, box)
 
         return False
@@ -349,7 +346,6 @@ def is_legal_move(piece, box):
             return move_is_safe(piece, box)
 
         if boards[box].color != piece.color:
-            boards[box].turtle.shape("blank")
             return move_is_safe(piece, box)
 
         return False
@@ -377,35 +373,103 @@ def is_legal_move(piece, box):
             if boards[box] is None:
                 return move_is_safe(piece, box)
             if boards[box].color != piece.color:
-                boards[box].turtle.shape("blank")
                 return move_is_safe(piece, box)
         return False
 
     if piece.kind == "king":
-        df = abs(file_from - file_to)
-        dr = abs(rank_from - rank_to)
-        if max(df, dr) != 1:
-            return False
+        df = file_to - file_from
+        dr = rank_to - rank_from
         enemy = "white" if piece.color == "black" else "black"
-        if is_square_attacked(box, enemy):
+        if max(abs(df), abs(dr)) == 1:
+            if boards[box] and boards[box].color == piece.color:
+                return False
+            if is_square_attacked(box, enemy):
+                return False
+            return move_is_safe(piece, box)
+
+        # Castling
+        if piece.move_count != 0 or dr != 0:
             return False
-        if boards[box] and boards[box].color == piece.color:
+
+        rank = "1" if piece.color == "white" else "8"
+
+        # King side
+        if df == 2:
+            rook_square = "h" + rank
+            path = ["f" + rank, "g" + rank]
+
+        # Queen side
+        elif df == -2:
+            rook_square = "a" + rank
+            path = ["d" + rank, "c" + rank]
+
+        else:
             return False
-        return move_is_safe(piece, box)
+
+        rook = boards.get(rook_square)
+        if not rook or rook.kind != "rook" or rook.move_count != 0:
+            return False
+
+        if in_check(piece.color):
+            return False
+
+        for sq in path:
+            if boards[sq] is not None:
+                return False
+            if is_square_attacked(sq, enemy):
+                return False
+
+        return True
 
 
 def move_piece(piece, box):
-    piece.turtle.penup()
+    from_square = piece.position
+    captured = boards[box]
+    if captured:
+        captured.turtle.shape("blank")
+    # Castling
+    if (
+        piece.kind == "king"
+        and abs(FILES.index(from_square[0]) - FILES.index(box[0])) == 2
+    ):
+        rank = from_square[1]
+
+        if box[0] == "g":  # king side
+            rook_from = "h" + rank
+            rook_to = "f" + rank
+        else:  # queen side
+            rook_from = "a" + rank
+            rook_to = "d" + rank
+
+        rook = boards[rook_from]
+        boards[rook_from] = None
+        rook.position = rook_to
+        x, y = square_to_xy(rook_to[0], rook_to[1])
+        rook.turtle.goto(x, y)
+        boards[rook_to] = rook
+        rook.move_count += 1
+
     boards[piece.position] = None
     piece.position = box
     x, y = square_to_xy(box[0], box[1])
     piece.turtle.goto(x, y)
     boards[box] = piece
+    piece.move_count += 1
     print("moving")
     if in_check("black"):
         print("black in check")
     if in_check("white"):
         print("white in check")
+
+    if is_checkmate("black"):
+        print("checkmate")
+    if is_checkmate("white"):
+        print("checkmate")
+
+    if is_stalemate("black"):
+        print("stalemate")
+    if is_stalemate("white"):
+        print("stalemate")
     t.update()
 
 
@@ -507,6 +571,36 @@ def in_check(color):
     king_square = find_king(color)
     enemy = "white" if color == "black" else "black"
     return is_square_attacked(king_square, enemy)
+
+
+def is_checkmate(color):
+    if not in_check(color):
+        return False
+
+    for box in boards:
+        piece = boards[box]
+        if piece and piece.color == color:
+            for f in FILES:
+                for r in "12345678":
+                    target = f + r
+                    if is_legal_move(piece, target) and move_is_safe(piece, target):
+                        return False
+    return True
+
+
+def is_stalemate(color):
+    if in_check(color):
+        return False
+
+    for box in boards:
+        piece = boards[box]
+        if piece and piece.color == color:
+            for f in FILES:
+                for r in "12345678":
+                    target = f + r
+                    if is_legal_move(piece, target) and move_is_safe(piece, target):
+                        return False
+    return True
 
 
 t.penup()
