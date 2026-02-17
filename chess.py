@@ -29,6 +29,7 @@ FILES = "abcdefgh"
 RANKS = "12345678"
 black_rm = []
 white_rm = []
+AI_COLOR = "black"
 
 
 class Piece:
@@ -312,6 +313,8 @@ def is_legal_move(piece, box):
         if file_from == file_to:
             step = 1 if rank_to > rank_from else -1
             for r in range(rank_from + step, rank_to, step):
+                if not (1 <= r <= 8):
+                    return False
                 square = piece.position[0] + str(r)
                 if boards[square] is not None:
                     return False
@@ -319,6 +322,8 @@ def is_legal_move(piece, box):
         elif rank_from == rank_to:
             step = 1 if file_to > file_from else -1
             for f in range(file_from + step, file_to, step):
+                if not (0 <= f < 8):
+                    return False
                 square = FILES[f] + piece.position[1]
                 if boards[square] is not None:
                     return False
@@ -345,7 +350,14 @@ def is_legal_move(piece, box):
         f = file_from + step_file
         r = rank_from + step_rank
 
-        while f != file_to and r != rank_to:
+        while 0 <= f < 8 and 1 <= r <= 8:
+            if f == file_to and r == rank_to:
+                break
+            square = FILES[f] + str(r)
+            if boards[square] is not None:
+                return False
+            f += step_file
+            r += step_rank
             square = FILES[f] + str(r)
             if boards[square] is not None:
                 return False
@@ -432,6 +444,7 @@ def is_legal_move(piece, box):
 
 
 def move_piece(piece, box):
+    global ind
     from_square = piece.position
     captured = boards[box]
     if captured:
@@ -465,7 +478,11 @@ def move_piece(piece, box):
     boards[box] = piece
     piece.move_count += 1
     pawn_promotion()
-    generate_moves("black")
+
+    ind = 1 - ind
+
+    if current_turn[ind] == AI_COLOR:
+        window.ontimer(ai_move, 300)
 
     print("moving")
     if in_check("black"):
@@ -641,7 +658,6 @@ def generate_moves(color):
                     target = f + r
                     if is_legal_move(piece, target) and move_is_safe(piece, target):
                         moves.append((piece, target))
-    print(moves[0], moves[1])
     return moves
 
 
@@ -668,6 +684,89 @@ def undo_move(move):
     boards[move.from_sq] = piece
     piece.position = move.from_sq
     piece.move_count = move.prev_move_count
+
+
+def evaluate_board():
+    values = {
+        "pawn": 100,
+        "knight": 320,
+        "bishop": 330,
+        "rook": 500,
+        "queen": 900,
+        "king": 20000,
+    }
+
+    score = 0
+    for piece in boards.values():
+        if piece:
+            v = values[piece.kind]
+            score += v if piece.color == "white" else -v
+    return score
+
+
+def minimax(depth, alpha, beta, maximizing):
+    if depth == 0:
+        return evaluate_board()
+
+    color = "white" if maximizing else "black"
+    moves = generate_moves(color)
+
+    if maximizing:
+        best = -(10**9)
+        for piece, target in moves:
+            move = make_move(piece, target)
+            score = minimax(depth - 1, alpha, beta, False)
+            undo_move(move)
+
+            best = max(best, score)
+            alpha = max(alpha, best)
+            if beta <= alpha:
+                break
+        return best
+    else:
+        best = 10**9
+        for piece, target in moves:
+            move = make_move(piece, target)
+            score = minimax(depth - 1, alpha, beta, True)
+            undo_move(move)
+
+            best = min(best, score)
+            beta = min(beta, best)
+            if beta <= alpha:
+                break
+        return best
+
+
+def find_best_move(color, depth=3):
+    best_move = None
+    best_score = -(10**9) if color == "white" else 10**9
+
+    for piece, target in generate_moves(color):
+        move = make_move(piece, target)
+        score = minimax(depth - 1, -(10**9), 10**9, color == "black")
+        undo_move(move)
+
+        if color == "white" and score > best_score:
+            best_score = score
+            best_move = (piece, target)
+        elif color == "black" and score < best_score:
+            best_score = score
+            best_move = (piece, target)
+
+    return best_move
+
+
+def ai_move():
+    global ind
+
+    result = find_best_move(AI_COLOR, depth=3)
+    if not result:
+        return
+
+    piece, target = result
+    move_piece(piece, target)
+
+    ind = 1 - ind
 
 
 t.penup()
