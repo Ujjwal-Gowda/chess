@@ -90,7 +90,6 @@ def create_pawns(color, rank, image):
         turt.shape(image)
         turt.penup()
         square = f"{file}{rank}"
-        print(square)
         x, y = square_to_xy(file, rank)
         turt.goto(x, y)
         pawn = Piece("pawn", color, square, turt, move_count=0)
@@ -217,15 +216,10 @@ def xy_to_board(x, y):
 
     file_idx = int((x + 400) // 100)
     rank_idx = int((y + 400) // 100)
-    print(file_idx, rank_idx)
     if not (0 <= file_idx < 8 and 0 <= rank_idx < 8):
         return None
 
     return FILES[file_idx] + RANKS[rank_idx]
-    print(round(x + 350) / 100)
-    file = FILES[round((x + 350) / 100)]
-    rank = str(round((y + 350) / 100) + 1)
-    return file + rank
 
 
 selected_piece = None
@@ -493,6 +487,8 @@ def move_piece(piece, box):
 
     if current_turn[ind] == AI_COLOR:
         window.ontimer(ai_move, 300)
+    if current_turn[ind] == "white":
+        window.ontimer(ai_move2, 300)
 
 
 def is_square_attacked(square, by_color):
@@ -730,13 +726,13 @@ def minimax(depth, alpha, beta, maximizing):
         return best
 
 
-def find_best_move(color, depth=3):
+def find_best_move(color, depth):
     best_move = None
     best_score = -(10**9) if color == "white" else 10**9
 
     for piece, target in generate_moves(color):
         move = make_move(piece, target)
-        score = minimax(depth - 1, -(10**9), 10**9, color == "black")
+        score = minimax(depth - 1, -(10**9), 10**9, color == color)
         undo_move(move)
 
         if color == "white" and score > best_score:
@@ -753,6 +749,17 @@ def ai_move():
     global ind
 
     result = find_best_move(AI_COLOR, depth=3)
+    if not result:
+        return
+
+    piece, target = result
+    move_piece(piece, target)
+
+
+def ai_move2():
+    global ind
+
+    result = find_best_move("white", depth=3)
     if not result:
         return
 
