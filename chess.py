@@ -1,7 +1,7 @@
 import turtle as t
 
 window = t.Screen()
-window.setup(800, 800)
+window.setup(1200, 800)
 t.tracer(0)
 board = t.Turtle()
 board.penup()
@@ -30,6 +30,11 @@ RANKS = "12345678"
 black_rm = []
 white_rm = []
 AI_COLOR = "black"
+undo_stack = []
+
+highlight = t.Turtle()
+highlight.hideturtle()
+highlight.penup()
 
 
 class Piece:
@@ -237,6 +242,7 @@ def fxn(x, y):
     if box is None:
         return
 
+    selected_disp()
     clicked_piece = boards[box]
 
     if selected_piece is None:
@@ -291,13 +297,6 @@ def is_legal_move(piece, box):
         # capture
         if abs(file_from - file_to) == 1 and rank_from + direction == rank_to:
             if boards[box] and boards[box].color != piece.color:
-                pie = boards[box]
-                (
-                    black_rm.append(pie)
-                    if piece.color == "white"
-                    else white_rm.append(pie)
-                )
-                print(white_rm, black_rm)
                 return move_is_safe(piece, box)
 
         return False
@@ -432,9 +431,18 @@ def is_legal_move(piece, box):
 
 
 def move_piece(piece, box):
+
+    highlight.clear()
+    highlight_square(piece.position, "orange")
+    highlight_square(box, "orange")
     global ind
     from_square = piece.position
     captured = boards[box]
+
+    move = Move(piece, piece.position, box, boards[box], piece.move_count)
+    undo_stack.append(move)
+    if len(undo_stack) > 3:
+        undo_stack.pop(0)
     if captured:
         captured.turtle.shape("blank")
     # Castling
@@ -468,6 +476,8 @@ def move_piece(piece, box):
     pawn_promotion()
 
     ind = 1 - ind
+    draw_status()
+    draw_turn()
     print("moving")
     if in_check("black"):
         print("black in check")
@@ -487,8 +497,6 @@ def move_piece(piece, box):
 
     if current_turn[ind] == AI_COLOR:
         window.ontimer(ai_move, 300)
-    if current_turn[ind] == "white":
-        window.ontimer(ai_move2, 300)
 
 
 def is_square_attacked(square, by_color):
@@ -756,17 +764,88 @@ def ai_move():
     move_piece(piece, target)
 
 
-def ai_move2():
-    global ind
+ui = t.Turtle()
+ui.hideturtle()
+ui.penup()
+ui.goto(450, 300)
 
-    result = find_best_move("white", depth=3)
-    if not result:
+
+def draw_turn():
+    ui.clear()
+    ui.write(
+        f"Turn: {current_turn[ind].capitalize()}",
+        align="left",
+        font=("Arial", 18, "bold"),
+    )
+
+
+status_ui = t.Turtle()
+status_ui.hideturtle()
+status_ui.penup()
+status_ui.goto(450, 250)
+
+
+def draw_status():
+    status_ui.clear()
+    if is_checkmate("white"):
+        status_ui.write("Checkmate! Black wins", font=("Arial", 16, "bold"))
+    elif is_checkmate("black"):
+        status_ui.write("Checkmate! White wins", font=("Arial", 16, "bold"))
+    elif is_stalemate("white") or is_stalemate("black"):
+        status_ui.write("Stalemate", font=("Arial", 16, "bold"))
+    elif in_check("white"):
+        status_ui.write("White in Check", font=("Arial", 16, "bold"))
+    elif in_check("black"):
+        status_ui.write("Black in Check", font=("Arial", 16, "bold"))
+
+
+def undo_last_move():
+    global ind
+    if not undo_stack:
         return
 
-    piece, target = result
-    move_piece(piece, target)
+    move = undo_stack.pop()
+    undo_move(move)
+
+    if move.captured:
+        move.captured.turtle.shape(
+            f"./pieces/{move.captured.kind}-{'w' if move.captured.color == 'white' else 'b'}.gif"
+        )
+
+    x, y = square_to_xy(move.from_sq[0], move.from_sq[1])
+    move.piece.turtle.goto(x, y)
+
+    ind = 1 - ind
+    draw_turn()
+    draw_status()
+    t.update()
 
 
+pie = t.Turtle()
+pie.hideturtle()
+pie.penup()
+pie.goto(450, 200)
+
+
+def selected_disp():
+    global selected_piece
+    pie.clear()
+    if selected_piece is not None:
+        pie.write(
+            f"{selected_piece.kind} selected",
+            font=("Arial", 14, "normal"),
+        )
+    else:
+        pie.write("no piece selected")
+
+
+def highlight_square(square, color="yellow"):
+    highlight.goto(square_to_xy(square[0], square[1]))
+    highlight.dot(9, color)
+
+
+window.onkey(undo_last_move, "u")
+window.listen()
 t.penup()
 t.hideturtle()
 window.onclick(fxn)
