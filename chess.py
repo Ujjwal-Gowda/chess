@@ -868,7 +868,7 @@ def draw_turn():
         ui.right(90)
     ui.end_fill()
 
-    ui.goto(500, 290)
+    ui.goto(500, 250)
     ui.color(text_color)
     ui.write(
         f"{color.upper()}'S TURN",
@@ -888,30 +888,30 @@ def draw_status():
 
     if is_checkmate("white"):
         status_ui.color("#F8BBD0")
-        status_ui.goto(500, 240)
+        status_ui.goto(500, 160)
         status_ui.write("♔ CHECKMATE", align="center", font=("Arial", 18, "bold"))
-        status_ui.goto(500, 215)
+        status_ui.goto(500, 135)
         status_ui.write("Black Wins", align="center", font=("Arial", 14, "normal"))
 
     elif is_checkmate("black"):
         status_ui.color("#F8BBD0")
-        status_ui.goto(500, 240)
+        status_ui.goto(500, 160)
         status_ui.write("♚ CHECKMATE", align="center", font=("Arial", 18, "bold"))
-        status_ui.goto(500, 215)
+        status_ui.goto(500, 135)
         status_ui.write("White Wins", align="center", font=("Arial", 14, "normal"))
 
     elif is_stalemate("white") or is_stalemate("black"):
         status_ui.color("#FFE0B2")
-        status_ui.goto(500, 240)
+        status_ui.goto(500, 160)
         status_ui.write("STALEMATE", align="center", font=("Arial", 18, "bold"))
-        status_ui.goto(500, 215)
+        status_ui.goto(500, 135)
         status_ui.write("Draw", align="center", font=("Arial", 14, "normal"))
 
     elif in_check("white"):
         status_ui.color("#FFE0B2")
-        status_ui.goto(500, 240)
+        status_ui.goto(500, 160)
         status_ui.write("⚠ CHECK", align="center", font=("Arial", 16, "bold"))
-        status_ui.goto(500, 215)
+        status_ui.goto(500, 135)
         status_ui.write(
             "White King in danger",
             align="center",
@@ -920,7 +920,7 @@ def draw_status():
 
     elif in_check("black"):
         status_ui.color("#FFE0B2")
-        status_ui.goto(500, 240)
+        status_ui.goto(500, 200)
         status_ui.write("⚠ CHECK", align="center", font=("Arial", 16, "bold"))
         status_ui.goto(500, 215)
         status_ui.write(
@@ -961,7 +961,7 @@ pie.goto(450, 200)
 def selected_disp():
     global selected_piece
     pie.clear()
-    pie.goto(500, 170)
+    pie.goto(500, 100)
 
     if selected_piece is not None:
         pie.color("#ABEBC6")
@@ -970,12 +970,12 @@ def selected_disp():
             align="center",
             font=("Arial", 12, "bold"),
         )
-        pie.goto(500, 150)
+        pie.goto(500, 75)
         pie.color("#aaa")
         pie.write(
             f"{selected_piece.position}",
             align="center",
-            font=("Arial", 10, "normal"),
+            font=("Arial", 14, "normal"),
         )
     else:
         pie.color("#999")
