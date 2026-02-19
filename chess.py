@@ -2,6 +2,7 @@ import turtle as t
 
 window = t.Screen()
 window.setup(1200, 800)
+window.bgcolor("#2b2b2b")
 t.tracer(0)
 board = t.Turtle()
 board.penup()
@@ -31,6 +32,11 @@ black_rm = []
 white_rm = []
 AI_COLOR = "black"
 undo_stack = []
+AI_DEPTH = 3
+game_started = False
+promotion_in_progress = False
+promotion_square = None
+promotion_color = None
 
 highlight = t.Turtle()
 highlight.hideturtle()
@@ -80,6 +86,92 @@ for boxes in range(8):
     board.pendown()
 board.penup()
 board.hideturtle()
+
+menu_turtle = t.Turtle()
+menu_turtle.hideturtle()
+menu_turtle.penup()
+
+button_turtle = t.Turtle()
+button_turtle.hideturtle()
+button_turtle.penup()
+
+
+def draw_button(x, y, width, height, text, color, text_color="white"):
+    """Draw a button"""
+    button_turtle.goto(x, y)
+    button_turtle.fillcolor(color)
+    button_turtle.pencolor("#555")
+    button_turtle.pensize(2)
+    button_turtle.begin_fill()
+    button_turtle.goto(x + width, y)
+    button_turtle.goto(x + width, y + height)
+    button_turtle.goto(x, y + height)
+    button_turtle.goto(x, y)
+    button_turtle.end_fill()
+
+    button_turtle.goto(x + width / 2, y + height / 2 - 10)
+    button_turtle.color(text_color)
+    button_turtle.write(text, align="center", font=("Arial", 14, "bold"))
+
+
+def draw_difficulty_menu():
+    """Draw the difficulty selection menu"""
+    button_turtle.clear()
+    menu_turtle.clear()
+
+    # Title
+    menu_turtle.goto(0, 200)
+    menu_turtle.color("white")
+    menu_turtle.write("Chess Game", align="center", font=("Arial", 36, "bold"))
+
+    menu_turtle.goto(0, 150)
+    menu_turtle.write("Select Difficulty", align="center", font=("Arial", 20, "normal"))
+
+    # Difficulty buttons
+    draw_button(-150, 50, 120, 60, "Easy", "#4CAF50")
+    draw_button(-15, 50, 120, 60, "Medium", "#FF9800")
+    draw_button(120, 50, 120, 60, "Hard", "#F44336")
+
+    # Instructions
+    menu_turtle.goto(0, -50)
+    menu_turtle.color("#aaa")
+    menu_turtle.write(
+        "Click a difficulty to start", align="center", font=("Arial", 14, "normal")
+    )
+
+
+def handle_difficulty_click(x, y):
+    """Handle clicks on difficulty menu"""
+    global AI_DEPTH, game_started, ind
+
+    if not game_started:
+        # Easy button
+        if -150 < x < -30 and 50 < y < 110:
+            AI_DEPTH = 2
+            game_started = True
+            button_turtle.clear()
+            menu_turtle.clear()
+            draw_turn()
+            draw_status()
+            t.update()
+        # Medium button
+        elif -15 < x < 105 and 50 < y < 110:
+            AI_DEPTH = 3
+            game_started = True
+            button_turtle.clear()
+            menu_turtle.clear()
+            draw_turn()
+            draw_status()
+            t.update()
+        # Hard button
+        elif 120 < x < 240 and 50 < y < 110:
+            AI_DEPTH = 4
+            game_started = True
+            button_turtle.clear()
+            menu_turtle.clear()
+            draw_turn()
+            draw_status()
+            t.update()
 
 
 def square_to_xy(file, rank):
@@ -840,8 +932,32 @@ def selected_disp():
 
 
 def highlight_square(square, color="yellow"):
-    highlight.goto(square_to_xy(square[0], square[1]))
-    highlight.dot(9, color)
+    """Highlight a square with a colored border"""
+    x, y = square_to_xy(square[0], square[1])
+    highlight.goto(x - 45, y - 45)
+    highlight.pendown()
+    highlight.pensize(4)
+    highlight.pencolor(color)
+
+    for _ in range(4):
+        highlight.forward(90)
+        highlight.left(90)
+
+    highlight.penup()
+
+
+def clear_highlights():
+    """Clear all square highlights"""
+    highlight.clear()
+
+
+def highlight_legal_moves(piece):
+    """Highlight all legal moves for a piece"""
+    for f in FILES:
+        for r in RANKS:
+            target = f + r
+            if is_legal_move(piece, target) and move_is_safe(piece, target):
+                highlight_square(target, "#90EE90")
 
 
 window.onkey(undo_last_move, "u")
