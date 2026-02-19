@@ -115,29 +115,21 @@ def draw_button(x, y, width, height, text, color, text_color="white"):
 
 
 def draw_difficulty_menu():
-    """Draw the difficulty selection menu"""
     button_turtle.clear()
     menu_turtle.clear()
 
     # Title
-    menu_turtle.goto(0, 200)
-    menu_turtle.color("white")
-    menu_turtle.write("Chess Game", align="center", font=("Arial", 36, "bold"))
+    menu_turtle.goto(0, 40)
+    menu_turtle.color("black")
+    menu_turtle.write("Chess Game", align="center", font=("Arial", 40, "bold"))
 
-    menu_turtle.goto(0, 150)
-    menu_turtle.write("Select Difficulty", align="center", font=("Arial", 20, "normal"))
+    menu_turtle.goto(0, -5)
+    menu_turtle.write("Difficulty", align="center", font=("Arial", 24, "bold"))
 
     # Difficulty buttons
-    draw_button(-150, 50, 120, 60, "Easy", "#4CAF50")
-    draw_button(-15, 50, 120, 60, "Medium", "#FF9800")
-    draw_button(120, 50, 120, 60, "Hard", "#F44336")
-
-    # Instructions
-    menu_turtle.goto(0, -50)
-    menu_turtle.color("#aaa")
-    menu_turtle.write(
-        "Click a difficulty to start", align="center", font=("Arial", 14, "normal")
-    )
+    draw_button(-200, -100, 120, 60, "Easy", "#ABEBC6", "#2C3E50")
+    draw_button(-60, -100, 120, 60, "Medium", "#F8C471", "#2C3E50")
+    draw_button(80, -100, 120, 60, "Hard", "#F5B7B1", "#2C3E50")
 
 
 def handle_difficulty_click(x, y):
@@ -146,8 +138,8 @@ def handle_difficulty_click(x, y):
 
     if not game_started:
         # Easy button
-        if -150 < x < -30 and 50 < y < 110:
-            AI_DEPTH = 2
+        if -200 < x < -80 and -100 < y < -40:
+            AI_DEPTH = 1
             game_started = True
             button_turtle.clear()
             menu_turtle.clear()
@@ -155,7 +147,7 @@ def handle_difficulty_click(x, y):
             draw_status()
             t.update()
         # Medium button
-        elif -15 < x < 105 and 50 < y < 110:
+        elif -60 < x < 60 and -100 < y < -40:
             AI_DEPTH = 3
             game_started = True
             button_turtle.clear()
@@ -164,7 +156,7 @@ def handle_difficulty_click(x, y):
             draw_status()
             t.update()
         # Hard button
-        elif 120 < x < 240 and 50 < y < 110:
+        elif 80 < x < 200 and -100 < y < -40:
             AI_DEPTH = 4
             game_started = True
             button_turtle.clear()
@@ -327,6 +319,15 @@ ind = 0
 
 def fxn(x, y):
     global selected_piece, ind
+
+    if not game_started:
+        handle_difficulty_click(x, y)
+        return
+
+    if promotion_in_progress:
+        handle_promotion_click(x, y)
+        return
+
     if not (-400 < x < 400 and -400 < y < 400):
         return
 
@@ -334,7 +335,6 @@ def fxn(x, y):
     if box is None:
         return
 
-    selected_disp()
     clicked_piece = boards[box]
 
     if selected_piece is None:
@@ -345,26 +345,39 @@ def fxn(x, y):
             return
 
         selected_piece = clicked_piece
+        clear_highlights()
+        highlight_square(box, "#FFF3B0")
+        highlight_legal_moves(selected_piece)
+        selected_disp()
+        t.update()
         print("selected:", box)
         return
+
     # deselect
     if box == selected_piece.position:
         selected_piece = None
+        clear_highlights()
+        selected_disp()
+        t.update()
         print("deselected")
         return
 
     if clicked_piece and clicked_piece.color == selected_piece.color:
         selected_piece = clicked_piece
+        clear_highlights()
+        highlight_square(box, "#FFF3B0")
+        highlight_legal_moves(selected_piece)
+        selected_disp()
+        t.update()
         print("switched selection to:", box)
         return
 
     if clicked_piece is None or boards[box].color != selected_piece.color:
-
-        print("selected_piece")
-
         if is_legal_move(selected_piece, box):
             move_piece(selected_piece, box)
             selected_piece = None
+            clear_highlights()
+            selected_disp()
         return
 
 
@@ -523,10 +536,6 @@ def is_legal_move(piece, box):
 
 
 def move_piece(piece, box):
-
-    highlight.clear()
-    highlight_square(piece.position, "orange")
-    highlight_square(box, "orange")
     global ind
     from_square = piece.position
     captured = boards[box]
@@ -537,6 +546,7 @@ def move_piece(piece, box):
         undo_stack.pop(0)
     if captured:
         captured.turtle.shape("blank")
+
     # Castling
     if (
         piece.kind == "king"
@@ -565,26 +575,18 @@ def move_piece(piece, box):
     piece.turtle.goto(x, y)
     boards[box] = piece
     piece.move_count += 1
+
+    clear_highlights()
+    highlight_square(from_square, "#FFE8A1")
+    highlight_square(box, "#FFE5A5")
+
     pawn_promotion()
 
     ind = 1 - ind
     draw_status()
     draw_turn()
     print("moving")
-    if in_check("black"):
-        print("black in check")
-    if in_check("white"):
-        print("white in check")
 
-    if is_checkmate("black"):
-        print("checkmate")
-    if is_checkmate("white"):
-        print("checkmate")
-
-    if is_stalemate("black"):
-        print("stalemate")
-    if is_stalemate("white"):
-        print("stalemate")
     t.update()
 
     if current_turn[ind] == AI_COLOR:
@@ -721,22 +723,6 @@ def is_stalemate(color):
     return True
 
 
-def pawn_promotion():
-    for color in ["white", "black"]:
-        rank = "8" if color == "white" else "1"
-        for box in boards:
-            piece = boards[box]
-            if piece and piece.kind == "pawn" and piece.color == color:
-                if box[1] == rank:
-                    piece.kind = "queen"
-                    piece.turtle.shape(
-                        "./pieces/queen-w.gif"
-                        if piece.color == "white"
-                        else "./pieces/queen-b.gif"
-                    )
-    return
-
-
 def generate_moves(color):
     moves = []
     for box in boards:
@@ -826,13 +812,15 @@ def minimax(depth, alpha, beta, maximizing):
         return best
 
 
-def find_best_move(color, depth):
+def find_best_move(color, depth=None):
+    if depth is None:
+        depth = AI_DEPTH
     best_move = None
     best_score = -(10**9) if color == "white" else 10**9
 
     for piece, target in generate_moves(color):
         move = make_move(piece, target)
-        score = minimax(depth - 1, -(10**9), 10**9, color == color)
+        score = minimax(depth - 1, -(10**9), 10**9, color == "black")
         undo_move(move)
 
         if color == "white" and score > best_score:
@@ -848,7 +836,7 @@ def find_best_move(color, depth):
 def ai_move():
     global ind
 
-    result = find_best_move(AI_COLOR, depth=3)
+    result = find_best_move(AI_COLOR)
     if not result:
         return
 
@@ -864,10 +852,28 @@ ui.goto(450, 300)
 
 def draw_turn():
     ui.clear()
+    color = current_turn[ind]
+    bg_color = "#f0f0f0" if color == "white" else "#333"
+    text_color = "#333" if color == "white" else "#f0f0f0"
+
+    ui.goto(420, 280)
+    ui.fillcolor(bg_color)
+    ui.pencolor(text_color)
+    ui.pensize(2)
+    ui.begin_fill()
+    for _ in range(2):
+        ui.forward(160)
+        ui.right(90)
+        ui.forward(40)
+        ui.right(90)
+    ui.end_fill()
+
+    ui.goto(500, 290)
+    ui.color(text_color)
     ui.write(
-        f"Turn: {current_turn[ind].capitalize()}",
-        align="left",
-        font=("Arial", 18, "bold"),
+        f"{color.upper()}'S TURN",
+        align="center",
+        font=("Arial", 14, "bold"),
     )
 
 
@@ -879,16 +885,49 @@ status_ui.goto(450, 250)
 
 def draw_status():
     status_ui.clear()
+
     if is_checkmate("white"):
-        status_ui.write("Checkmate! Black wins", font=("Arial", 16, "bold"))
+        status_ui.color("#F8BBD0")
+        status_ui.goto(500, 240)
+        status_ui.write("♔ CHECKMATE", align="center", font=("Arial", 18, "bold"))
+        status_ui.goto(500, 215)
+        status_ui.write("Black Wins", align="center", font=("Arial", 14, "normal"))
+
     elif is_checkmate("black"):
-        status_ui.write("Checkmate! White wins", font=("Arial", 16, "bold"))
+        status_ui.color("#F8BBD0")
+        status_ui.goto(500, 240)
+        status_ui.write("♚ CHECKMATE", align="center", font=("Arial", 18, "bold"))
+        status_ui.goto(500, 215)
+        status_ui.write("White Wins", align="center", font=("Arial", 14, "normal"))
+
     elif is_stalemate("white") or is_stalemate("black"):
-        status_ui.write("Stalemate", font=("Arial", 16, "bold"))
+        status_ui.color("#FFE0B2")
+        status_ui.goto(500, 240)
+        status_ui.write("STALEMATE", align="center", font=("Arial", 18, "bold"))
+        status_ui.goto(500, 215)
+        status_ui.write("Draw", align="center", font=("Arial", 14, "normal"))
+
     elif in_check("white"):
-        status_ui.write("White in Check", font=("Arial", 16, "bold"))
+        status_ui.color("#FFE0B2")
+        status_ui.goto(500, 240)
+        status_ui.write("⚠ CHECK", align="center", font=("Arial", 16, "bold"))
+        status_ui.goto(500, 215)
+        status_ui.write(
+            "White King in danger",
+            align="center",
+            font=("Arial", 12, "normal"),
+        )
+
     elif in_check("black"):
-        status_ui.write("Black in Check", font=("Arial", 16, "bold"))
+        status_ui.color("#FFE0B2")
+        status_ui.goto(500, 240)
+        status_ui.write("⚠ CHECK", align="center", font=("Arial", 16, "bold"))
+        status_ui.goto(500, 215)
+        status_ui.write(
+            "Black King in danger",
+            align="center",
+            font=("Arial", 12, "normal"),
+        )
 
 
 def undo_last_move():
@@ -922,21 +961,36 @@ pie.goto(450, 200)
 def selected_disp():
     global selected_piece
     pie.clear()
+    pie.goto(500, 170)
+
     if selected_piece is not None:
+        pie.color("#ABEBC6")
         pie.write(
-            f"{selected_piece.kind} selected",
-            font=("Arial", 14, "normal"),
+            f"Selected: {selected_piece.kind.capitalize()}",
+            align="center",
+            font=("Arial", 12, "bold"),
+        )
+        pie.goto(500, 150)
+        pie.color("#aaa")
+        pie.write(
+            f"{selected_piece.position}",
+            align="center",
+            font=("Arial", 10, "normal"),
         )
     else:
-        pie.write("no piece selected")
+        pie.color("#999")
+        pie.write(
+            "No piece selected",
+            align="center",
+            font=("Arial", 12, "normal"),
+        )
 
 
 def highlight_square(square, color="yellow"):
-    """Highlight a square with a colored border"""
     x, y = square_to_xy(square[0], square[1])
     highlight.goto(x - 45, y - 45)
     highlight.pendown()
-    highlight.pensize(4)
+    highlight.pensize(3)
     highlight.pencolor(color)
 
     for _ in range(4):
@@ -947,17 +1001,90 @@ def highlight_square(square, color="yellow"):
 
 
 def clear_highlights():
-    """Clear all square highlights"""
     highlight.clear()
 
 
 def highlight_legal_moves(piece):
-    """Highlight all legal moves for a piece"""
     for f in FILES:
         for r in RANKS:
             target = f + r
             if is_legal_move(piece, target) and move_is_safe(piece, target):
                 highlight_square(target, "#90EE90")
+
+
+def pawn_promotion():
+    global promotion_in_progress, promotion_square, promotion_color
+
+    for color in ["white", "black"]:
+        rank = "8" if color == "white" else "1"
+        for box in boards:
+            piece = boards[box]
+            if piece and piece.kind == "pawn" and piece.color == color:
+                if box[1] == rank:
+                    promotion_square = box
+                    promotion_color = color
+                    promotion_in_progress = True
+                    show_promotion_menu(color)
+                    return
+
+
+def show_promotion_menu(color):
+    menu_turtle.clear()
+    menu_turtle.goto(0, 300)
+    # menu_turtle.color("black")
+    # menu_turtle.write(
+    #     f"Promote {color} pawn to:", align="center", font=("Arial", 20, "bold")
+    # )
+
+    y_pos = 200
+    options = ["Queen", "Rook", "Bishop", "Knight"]
+
+    colors = [
+        "#C39BD3",
+        "#AED6F1",
+        "#ABEBC6",
+        "#F8C471",
+    ]
+    for i, (option, btn_color) in enumerate(zip(options, colors)):
+        x_pos = -250 + i * 140
+        draw_button(x_pos, y_pos, 120, 60, option, btn_color, "black")
+
+    t.update()
+
+
+def handle_promotion_click(x, y):
+    global promotion_in_progress, promotion_square, promotion_color
+
+    if 200 < y < 260:
+        choice = None
+        # Queen
+        if -250 < x < -130:
+            choice = "queen"
+        # Rook
+        elif -110 < x < 10:
+            choice = "rook"
+        # Bishop
+        elif 30 < x < 150:
+            choice = "bishop"
+        # Knight
+        elif 170 < x < 290:
+            choice = "knight"
+
+        if choice:
+            piece = boards[promotion_square]
+            piece.kind = choice
+            piece.turtle.shape(
+                f"./pieces/{choice}-{'w' if promotion_color == 'white' else 'b'}.gif"
+            )
+            promotion_in_progress = False
+            promotion_square = None
+            promotion_color = None
+            menu_turtle.clear()
+            button_turtle.clear()
+            t.update()
+
+
+draw_difficulty_menu()
 
 
 window.onkey(undo_last_move, "u")
