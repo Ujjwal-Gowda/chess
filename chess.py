@@ -1,4 +1,24 @@
 import turtle as t
+import sys
+import os
+
+
+def resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    full_path = os.path.join(base_path, relative_path)
+
+    # Debug: Print to see what path is being used
+    print(f"Resource path for {relative_path}: {full_path}")
+    print(f"File exists: {os.path.exists(full_path)}")
+
+    return full_path
+
 
 window = t.Screen()
 window.setup(1200, 800)
@@ -11,18 +31,18 @@ board.pendown()
 y = -400
 x = -400
 board.speed(0)
-window.register_shape("./pieces/pawn-b.gif")
-window.register_shape("./pieces/pawn-w.gif")
-window.register_shape("./pieces/bishop-b.gif")
-window.register_shape("./pieces/bishop-w.gif")
-window.register_shape("./pieces/knight-w.gif")
-window.register_shape("./pieces/knight-b.gif")
-window.register_shape("./pieces/rook-b.gif")
-window.register_shape("./pieces/rook-w.gif")
-window.register_shape("./pieces/queen-b.gif")
-window.register_shape("./pieces/queen-w.gif")
-window.register_shape("./pieces/king-b.gif")
-window.register_shape("./pieces/king-w.gif")
+window.register_shape(resource_path("pieces/pawn-b.gif"))
+window.register_shape(resource_path("pieces/pawn-w.gif"))
+window.register_shape(resource_path("pieces/bishop-b.gif"))
+window.register_shape(resource_path("pieces/bishop-w.gif"))
+window.register_shape(resource_path("pieces/knight-w.gif"))
+window.register_shape(resource_path("pieces/knight-b.gif"))
+window.register_shape(resource_path("pieces/rook-b.gif"))
+window.register_shape(resource_path("pieces/rook-w.gif"))
+window.register_shape(resource_path("pieces/queen-b.gif"))
+window.register_shape(resource_path("pieces/queen-w.gif"))
+window.register_shape(resource_path("pieces/king-b.gif"))
+window.register_shape(resource_path("pieces/king-w.gif"))
 
 pieces = []
 current_turn = ["white", "black"]
@@ -186,8 +206,8 @@ def create_pawns(color, rank, image):
     return pawns
 
 
-white_pawns = create_pawns("white", 2, "./pieces/pawn-w.gif")
-black_pawns = create_pawns("black", 7, "./pieces/pawn-b.gif")
+white_pawns = create_pawns("white", 2, resource_path("pieces/pawn-w.gif"))
+black_pawns = create_pawns("black", 7, resource_path("pieces/pawn-b.gif"))
 
 pieces.extend(white_pawns)
 pieces.extend(black_pawns)
@@ -207,8 +227,8 @@ def create_rooks(color, rank, image):
     return rooks
 
 
-white_rooks = create_rooks("white", 1, "./pieces/rook-w.gif")
-black_rooks = create_rooks("black", 8, "./pieces/rook-b.gif")
+white_rooks = create_rooks("white", 1, resource_path("pieces/rook-w.gif"))
+black_rooks = create_rooks("black", 8, resource_path("pieces/rook-b.gif"))
 
 pieces.extend(white_rooks)
 pieces.extend(black_rooks)
@@ -228,8 +248,8 @@ def create_knight(color, rank, image):
     return knights
 
 
-white_knights = create_knight("white", 1, "./pieces/knight-w.gif")
-black_knights = create_knight("black", 8, "./pieces/knight-b.gif")
+white_knights = create_knight("white", 1, resource_path("pieces/knight-w.gif"))
+black_knights = create_knight("black", 8, resource_path("pieces/knight-b.gif"))
 
 pieces.extend(white_knights)
 pieces.extend(black_knights)
@@ -249,8 +269,8 @@ def create_bishop(color, rank, image):
     return bishops
 
 
-white_bishop = create_bishop("white", 1, "./pieces/bishop-w.gif")
-black_bishop = create_bishop("black", 8, "./pieces/bishop-b.gif")
+white_bishop = create_bishop("white", 1, resource_path("pieces/bishop-w.gif"))
+black_bishop = create_bishop("black", 8, resource_path("pieces/bishop-b.gif"))
 
 pieces.extend(white_bishop)
 pieces.extend(black_bishop)
@@ -267,8 +287,8 @@ def create_king(color, rank, image):
     return king
 
 
-white_king = create_king("white", 1, "./pieces/king-w.gif")
-black_king = create_king("black", 8, "./pieces/king-b.gif")
+white_king = create_king("white", 1, resource_path("pieces/king-w.gif"))
+black_king = create_king("black", 8, resource_path("pieces/king-b.gif"))
 
 pieces.append(white_king)
 pieces.append(black_king)
@@ -285,8 +305,8 @@ def create_queen(color, rank, image):
     return queen
 
 
-white_queen = create_queen("white", 1, "./pieces/queen-w.gif")
-black_queen = create_queen("black", 8, "./pieces/queen-b.gif")
+white_queen = create_queen("white", 1, resource_path("pieces/queen-w.gif"))
+black_queen = create_queen("black", 8, resource_path("pieces/queen-b.gif"))
 
 pieces.append(white_queen)
 pieces.append(black_queen)
@@ -940,7 +960,9 @@ def undo_last_move():
 
     if move.captured:
         move.captured.turtle.shape(
-            f"./pieces/{move.captured.kind}-{'w' if move.captured.color == 'white' else 'b'}.gif"
+            resource_path(
+                f"pieces/{move.captured.kind}-{'w' if move.captured.color == 'white' else 'b'}.gif"
+            )
         )
 
     x, y = square_to_xy(move.from_sq[0], move.from_sq[1])
